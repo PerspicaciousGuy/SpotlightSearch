@@ -26,6 +26,8 @@ The first launch starts indexing in the background. Results appear as batches ar
 - **Escape:** clear the search; press again to hide the launcher
 - **Ctrl + 1 / 2 / 3 / 4:** switch All / Apps / Files / Folders
 - **Ctrl + L:** select the search field
+- **Slash commands:** type `/a ` for Apps, `/f ` for Files, or `/o ` for Folders. The prefix becomes a chip in the search box; Backspace on an empty box removes it, and Esc clears the text and the chip. Type `/` alone to list the commands (Up/Down, then Enter or Tab), or `/r` to show recent searches.
+- **Recent searches:** with an empty box, Lumen lists your last 10 searches (only ones you opened a result from). Select one with Up/Down and Enter, or click it. **Clear** erases the list. They are stored as plain text in the WebView's local storage on your PC, not in the file index.
 - **Tray menu:** open, refresh the index, toggle the blur background, or quit
 - **Refresh button:** rescan for new, renamed, or removed files
 

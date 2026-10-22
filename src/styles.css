@@ -142,6 +142,19 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
    CSS shadow and extra outline go away; Windows 11 supplies the shadow and rounded corners. */
 [data-blur='on'] .native-shell { padding: 0; }
 [data-blur='on'] .native-shell .launcher { border-radius: 8px; border-color: rgba(255, 255, 255, .45); outline: 0; box-shadow: none; background: rgba(249, 249, 252, .35); }
+/* Category chip and the suggestion lists (recent searches, "/" commands). */
+.kind-chip { flex: none; display: inline-flex; align-items: center; gap: 3px; height: 28px; padding: 0 4px 0 10px; border-radius: 8px; background: rgba(55, 101, 221, .12); color: #2f4fa8; font-size: 13px; font-weight: 550; letter-spacing: 0; }
+.kind-chip button { display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; }
+.kind-chip button:hover { background: rgba(55, 101, 221, .16); }
+.result-surface.result-surface--list { height: auto; max-height: 348px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #a9a7b580 transparent; }
+.suggestion-pane { padding: 10px 9px 12px; }
+.suggestion-head { display: flex; align-items: center; justify-content: space-between; color: var(--secondary); font-size: 10px; font-weight: 550; padding: 5px 11px 7px; }
+.suggestion-pane ul { list-style: none; margin: 0; padding: 0; }
+.text-link { border: 0; background: none; color: var(--accent); font-size: 10px; padding: 2px 4px; border-radius: 4px; }
+.text-link:hover { background: rgba(55, 101, 221, .1); }
+.suggestion-row { min-height: 46px; }
+.suggestion-icon { flex: none; width: 31px; display: grid; place-items: center; color: #77738a; }
+.suggestion-empty { margin: 0; padding: 18px 11px 10px; color: var(--secondary); font-size: 12px; line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; } }
 @media (prefers-reduced-transparency: reduce) { .launcher, [data-blur='on'] .native-shell .launcher { background: #f8f8fc; backdrop-filter: none; } }
 @media (forced-colors: active) { .result-row.is-selected { outline: 2px solid Highlight; } .filter-button.is-active { outline: 1px solid Highlight; } }

@@ -25,7 +25,7 @@ tauri-build = { version = "2", optional = true }
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
 walkdir = "2"
 dirs = "6"
 tauri = { version = "2", features = ["tray-icon"], optional = true }

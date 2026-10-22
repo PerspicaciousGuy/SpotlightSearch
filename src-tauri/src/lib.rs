@@ -128,6 +128,7 @@ impl Index {
                 .into_iter()
                 .filter_entry(|e| {
                     !e.file_type().is_symlink()
+                        && !is_recent_shortcuts(e)
                         && !matches!(
                             e.file_name().to_str(),
                             Some(
@@ -328,6 +329,27 @@ fn start_apps() -> Vec<(String, String, &'static str)> {
     Vec::new()
 }
 
+/// `Microsoft\\Windows\\Recent` and `Microsoft\\Office\\Recent` only hold `.lnk` shortcuts to
+/// documents and web pages the user opened. They are not apps and the targets are indexed
+/// themselves, so walking them just fills the Apps list with noise.
+fn is_recent_shortcuts(entry: &walkdir::DirEntry) -> bool {
+    if !entry.file_type().is_dir() || !entry.file_name().eq_ignore_ascii_case("Recent") {
+        return false;
+    }
+    let mut parents = entry
+        .path()
+        .components()
+        .rev()
+        .skip(1)
+        .filter_map(|part| part.as_os_str().to_str());
+    matches!(
+        (parents.next(), parents.next()),
+        (Some(app), Some(vendor))
+            if (app.eq_ignore_ascii_case("Windows") || app.eq_ignore_ascii_case("Office"))
+                && vendor.eq_ignore_ascii_case("Microsoft")
+    )
+}
+
 fn classify(path: &Path, folder: bool) -> &'static str {
     if folder {
         return "folder";
@@ -365,6 +387,33 @@ mod tests {
         std::fs::create_dir_all(&root).unwrap();
         let index = Index::new(temp.join("index.db")).unwrap();
         (temp, root, index)
+    }
+
+    #[test]
+    fn recent_shortcut_folders_are_not_indexed() {
+        let (temp, root, index) = fixture("recent-shortcuts");
+        let recent = root.join("AppData/Roaming/Microsoft/Windows/Recent");
+        let office = root.join("AppData/Roaming/Microsoft/Office/Recent");
+        let other = root.join("Projects/Recent");
+        for dir in [&recent, &office, &other] {
+            std::fs::create_dir_all(dir).unwrap();
+        }
+        std::fs::write(recent.join("TRADING-journal.lnk"), "").unwrap();
+        std::fs::write(office.join("trading plan.lnk"), "").unwrap();
+        std::fs::write(other.join("trading notes.txt"), "").unwrap();
+        std::fs::write(root.join("trading.exe"), "").unwrap();
+        index.scan(vec![root]).unwrap();
+        let names: Vec<_> = index
+            .search("trading", "all")
+            .unwrap()
+            .into_iter()
+            .map(|item| item.name)
+            .collect();
+        assert_eq!(names, ["trading notes.txt", "trading.exe"]);
+        // The Recent folders themselves are skipped, an unrelated "Recent" is not.
+        assert_eq!(index.search("recent", "folder").unwrap().len(), 1);
+        drop(index);
+        std::fs::remove_dir_all(temp).unwrap();
     }
 
     #[test]

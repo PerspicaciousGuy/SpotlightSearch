@@ -95,6 +95,8 @@ fn main() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event { api.prevent_close(); let _ = window.hide(); }
+            // A launcher should dismiss itself when the user clicks or switches elsewhere.
+            if let tauri::WindowEvent::Focused(false) = event { let _ = window.hide(); }
             if let tauri::WindowEvent::Focused(true) = event {
                 if let Some(error) = window.app_handle().try_state::<ShortcutError>() { let _ = window.emit("shortcut-error", &error.0); }
             }

@@ -83,13 +83,13 @@ impl Index {
         }
     }
     pub fn rebuild(self: &Arc<Self>, roots: Vec<PathBuf>) {
-        self.rebuild_with_roots(move || roots);
+        self.rebuild_with_roots(move || roots, false);
     }
     pub fn rebuild_system(self: &Arc<Self>) {
         // Probing a disconnected/network drive can block. Do it on the worker too.
-        self.rebuild_with_roots(search_roots);
+        self.rebuild_with_roots(search_roots, true);
     }
-    fn rebuild_with_roots<F>(self: &Arc<Self>, roots: F)
+    fn rebuild_with_roots<F>(self: &Arc<Self>, roots: F, packaged_apps: bool)
     where
         F: FnOnce() -> Vec<PathBuf> + Send + 'static,
     {
@@ -100,13 +100,16 @@ impl Index {
         *index.error.lock().unwrap() = None;
         index.skipped.store(0, Ordering::Relaxed);
         std::thread::spawn(move || {
-            if let Err(e) = index.scan(roots()) {
+            if let Err(e) = index.scan_with(roots(), packaged_apps) {
                 *index.error.lock().unwrap() = Some(e);
             }
             index.running.store(false, Ordering::SeqCst);
         });
     }
     fn scan(&self, roots: Vec<PathBuf>) -> Result<()> {
+        self.scan_with(roots, false)
+    }
+    fn scan_with(&self, roots: Vec<PathBuf>, packaged_apps: bool) -> Result<()> {
         let mut conn = self.connect()?;
         let generation: i64 = sql(conn.query_row(
             "SELECT COALESCE(MAX(generation),0)+1 FROM files",
@@ -114,6 +117,11 @@ impl Index {
             |r| r.get(0),
         ))?;
         let mut batch = Vec::with_capacity(500);
+        if packaged_apps {
+            // Indexed first so Store apps are searchable long before the disk walk ends.
+            batch.extend(start_apps());
+            self.flush(&mut conn, &mut batch, generation)?;
+        }
         for root in roots {
             for entry in WalkDir::new(root)
                 .follow_links(false)
@@ -254,6 +262,72 @@ fn search_result(row: &rusqlite::Row<'_>) -> rusqlite::Result<SearchResult> {
     })
 }
 
+/// Packaged (Store/MSIX) apps have no file on disk the index can walk; they are listed by
+/// the shell and launched through this virtual folder, e.g. `shell:AppsFolder\Pkg_id!App`.
+pub const APPS_FOLDER: &str = "shell:AppsFolder\\";
+
+/// Parse `Name<TAB>AppID` lines from `Get-StartApps`. Only packaged apps (an AppID with
+/// `!`) are kept; classic apps are already indexed from their Start Menu shortcuts.
+fn parse_start_apps(output: &str) -> Vec<(String, String, &'static str)> {
+    let mut seen = std::collections::HashSet::new();
+    output
+        .trim_start_matches('\u{feff}')
+        .lines()
+        .filter_map(|line| {
+            let (name, id) = line.trim_end_matches('\r').split_once('\t')?;
+            let (name, id) = (name.trim(), id.trim());
+            if name.is_empty() || !id.contains('!') || id.contains(char::is_whitespace) {
+                return None;
+            }
+            let path = format!("{APPS_FOLDER}{id}");
+            seen.insert(path.clone()).then(|| (name.to_string(), path, "app"))
+        })
+        .collect()
+}
+
+#[cfg(windows)]
+fn start_apps() -> Vec<(String, String, &'static str)> {
+    use std::io::Read;
+    use std::os::windows::process::CommandExt;
+    use std::process::{Command, Stdio};
+    use std::time::{Duration, Instant};
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    const SCRIPT: &str = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-StartApps | ForEach-Object { $_.Name + [char]9 + $_.AppID }";
+    let child = Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-Command", SCRIPT])
+        .creation_flags(CREATE_NO_WINDOW)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn();
+    let Ok(mut child) = child else { return Vec::new() };
+    let Some(mut stdout) = child.stdout.take() else { return Vec::new() };
+    let reader = std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let _ = stdout.read_to_end(&mut bytes);
+        bytes
+    });
+    // A stuck PowerShell must not keep the indexer marked as running forever.
+    let deadline = Instant::now() + Duration::from_secs(30);
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(50)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                break;
+            }
+        }
+    }
+    let bytes = reader.join().unwrap_or_default();
+    parse_start_apps(&String::from_utf8_lossy(&bytes))
+}
+#[cfg(not(windows))]
+fn start_apps() -> Vec<(String, String, &'static str)> {
+    Vec::new()
+}
+
 fn classify(path: &Path, folder: bool) -> &'static str {
     if folder {
         return "folder";
@@ -291,6 +365,43 @@ mod tests {
         std::fs::create_dir_all(&root).unwrap();
         let index = Index::new(temp.join("index.db")).unwrap();
         (temp, root, index)
+    }
+
+    #[test]
+    fn start_apps_keep_only_packaged_apps_once() {
+        let output = "\u{feff}TradingView\tTradingView.Desktop_n534cwy3pjxzj!TradingView.Desktop\r\n\
+            Notepad++\t{6D809377-6AF0-444B-8957-A3773F02200E}\\Notepad++\\notepad++.exe\r\n\
+            Microsoft Edge\tMSEdge\r\n\
+            日本語 App\tPkg_1!App\r\n\
+            Duplicate\tPkg_1!App\r\n\
+            \r\nno tab here\r\n";
+        let apps = parse_start_apps(output);
+        assert_eq!(
+            apps,
+            vec![
+                (
+                    "TradingView".to_string(),
+                    format!("{APPS_FOLDER}TradingView.Desktop_n534cwy3pjxzj!TradingView.Desktop"),
+                    "app"
+                ),
+                ("日本語 App".to_string(), format!("{APPS_FOLDER}Pkg_1!App"), "app"),
+            ]
+        );
+    }
+
+    #[test]
+    fn packaged_apps_are_searchable_by_name() {
+        let (temp, _root, index) = fixture("packaged-apps");
+        let mut batch = parse_start_apps("TradingView\tPkg_x!App\n");
+        index
+            .flush(&mut index.connect().unwrap(), &mut batch, 1)
+            .unwrap();
+        let found = index.search("tradingv", "app").unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].path, "shell:AppsFolder\\Pkg_x!App");
+        assert_eq!(index.path_for_id(found[0].id).unwrap(), PathBuf::from(&found[0].path));
+        drop(index);
+        std::fs::remove_dir_all(temp).unwrap();
     }
 
     #[test]

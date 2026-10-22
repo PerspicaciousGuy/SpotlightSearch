@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use lumen_search::{Index, IndexStatus, SearchResult};
+use lumen_search::{Index, IndexStatus, SearchResult, APPS_FOLDER};
 use std::sync::Arc;
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem},
@@ -67,6 +67,14 @@ async fn open_result(
     let index = index.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         let path = index.path_for_id(id)?;
+        // Store/MSIX apps have no file path; the shell launches them from the apps folder.
+        if path.to_str().is_some_and(|p| p.starts_with(APPS_FOLDER)) {
+            return std::process::Command::new("explorer.exe")
+                .arg(&path)
+                .spawn()
+                .map(|_| ())
+                .map_err(|e| e.to_string());
+        }
         if !path.exists() {
             return Err(
                 "This item has moved or was deleted. Refresh the index and try again.".into(),

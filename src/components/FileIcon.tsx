@@ -12,6 +12,7 @@ export function fileType(file: Result) {
   return types[ext] || (ext ? `${ext.toUpperCase()} file` : 'File');
 }
 export function parentPath(file: Result) {
+  if (file.path.startsWith('shell:AppsFolder')) return 'Installed app';
   const separator = file.path.includes('\\') ? '\\' : '/';
   return file.path.slice(0, file.path.lastIndexOf(separator)) || separator;
 }

@@ -141,7 +141,7 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
 /* Native Acrylic blur (tray: Blur background). The window itself is the card, so the margin,
    CSS shadow and extra outline go away; Windows 11 supplies the shadow and rounded corners. */
 [data-blur='on'] .native-shell { padding: 0; }
-[data-blur='on'] .native-shell .launcher { border-radius: 8px; border-color: rgba(255, 255, 255, .45); outline: 0; box-shadow: none; background: rgba(249, 249, 252, .6); }
+[data-blur='on'] .native-shell .launcher { border-radius: 8px; border-color: rgba(255, 255, 255, .45); outline: 0; box-shadow: none; background: rgba(249, 249, 252, .35); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; } }
 @media (prefers-reduced-transparency: reduce) { .launcher, [data-blur='on'] .native-shell .launcher { background: #f8f8fc; backdrop-filter: none; } }
 @media (forced-colors: active) { .result-row.is-selected { outline: 2px solid Highlight; } .filter-button.is-active { outline: 1px solid Highlight; } }

@@ -60,7 +60,7 @@ Lumen can ask Windows 11 for an Acrylic window backdrop (Tauri `set_effects`, ba
 
 - On Windows 11 build 22523 or newer the crate uses the system backdrop API (`DWMWA_SYSTEMBACKDROP_TYPE`). The crate's README lists a resize/drag performance warning for Acrylic only on Windows 10 v1903+ and Windows 11 build 22000, and for Blur on build 22621; this implementation is neither of those paths on current builds, but **no Windows frame-time, typing or memory measurements exist for it yet**.
 - The backdrop covers the whole native window, so blur mode removes the transparent margin around the card and uses the system shadow and rounded corners (`set_shadow(true)`, which Tauri documents as giving undecorated Windows 11 windows rounded corners and a 1px border). The window is forced to the Light theme so the material matches the light UI.
-- The tint colour passed to Tauri has no effect on Windows 11 (per Tauri's docs), so legibility comes from the page's translucent fill.
+- The tint colour passed to Tauri has no effect on Windows 11 (per Tauri's docs), so legibility comes from the page's translucent fill (currently about 35% white).
 - If it feels slow, switch it off from the tray; that restores the solid card, CSS shadow and transparent margin.
 
 ## Verification

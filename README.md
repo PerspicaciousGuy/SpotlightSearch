@@ -26,14 +26,14 @@ The first launch starts indexing in the background. Results appear as batches ar
 - **Escape:** clear the search; press again to hide the launcher
 - **Ctrl + 1 / 2 / 3 / 4:** switch All / Apps / Files / Folders
 - **Ctrl + L:** select the search field
-- **Tray menu:** open, refresh the index, or quit
+- **Tray menu:** open, refresh the index, toggle the blur background, or quit
 - **Refresh button:** rescan for new, renamed, or removed files
 
 Alt + Space must be available to register as a global shortcut. If another utility owns it, use the tray menu to open Lumen. Closing the window keeps the process running; use **Quit Lumen** in the tray menu to exit.
 
 ## Performance comes first
 
-Search runs in Rust against a persistent SQLite index. The UI dispatches immediately with one request in flight and only the latest query pending. Search/status updates pause while the launcher is hidden or unfocused; the Rust indexer can continue its background scan. The surface uses a solid fill instead of backdrop blur.
+Search runs in Rust against a persistent SQLite index. The UI dispatches immediately with one request in flight and only the latest query pending. Search/status updates pause while the launcher is hidden or unfocused; the Rust indexer can continue its background scan. The surface uses a mostly solid fill; there is no CSS backdrop blur. An experimental native Windows Acrylic blur can be switched off from the tray menu (**Blur background**); see [PERFORMANCE.md](PERFORMANCE.md#acrylic-blur-experiment).
 
 See [performance measurements and remaining work](PERFORMANCE.md). The one-million-entry synthetic Linux benchmark reduced backend p95 from approximately 358 ms to under 1 ms; this is not a Windows end-to-end timing or memory measurement.
 

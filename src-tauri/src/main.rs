@@ -2,8 +2,9 @@
 use lumen_search::{Index, IndexStatus, SearchResult};
 use std::sync::Arc;
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{CheckMenuItem, Menu, MenuItem},
     tray::TrayIconBuilder,
+    window::{Color, Effect, EffectsBuilder},
     Emitter, Manager, State,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
@@ -15,6 +16,28 @@ fn show(app: &tauri::AppHandle) {
         let _ = window.set_focus();
         let _ = window.emit("launcher-open", ());
     }
+}
+// The blur setting is a marker file so it survives restarts without a settings system.
+// Blur is on unless the file exists.
+fn blur_marker(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    app.path().app_data_dir().ok().map(|dir| dir.join("blur-off"))
+}
+fn blur_enabled_now(app: &tauri::AppHandle) -> bool {
+    !blur_marker(app).is_some_and(|marker| marker.exists())
+}
+// Acrylic fills the whole native window, so the page drops its transparent margin and
+// relies on the system shadow and rounded corners while blur is on. See App.tsx.
+fn apply_blur(app: &tauri::AppHandle, on: bool) {
+    if let Some(window) = app.get_webview_window("main") {
+        let effects = on.then(|| EffectsBuilder::new().effect(Effect::Acrylic).color(Color(244, 244, 250, 110)).build());
+        let _ = window.set_effects(effects);
+        let _ = window.set_shadow(on);
+        let _ = window.emit("blur-changed", on);
+    }
+}
+#[tauri::command]
+fn blur_enabled(app: tauri::AppHandle) -> bool {
+    blur_enabled_now(&app)
 }
 #[tauri::command]
 async fn search(
@@ -68,7 +91,7 @@ fn main() {
                 }
             }
         }).build())
-        .invoke_handler(tauri::generate_handler![search, index_status, rebuild_index, open_result])
+        .invoke_handler(tauri::generate_handler![search, index_status, rebuild_index, open_result, blur_enabled])
         .setup(|app| {
             let index = Index::new(app.path().app_data_dir()?.join("index.sqlite3"))?;
             app.manage(index.clone());
@@ -78,16 +101,26 @@ fn main() {
                 let message = format!("Alt + Space could not be registered: {error}. Open Lumen from the system tray.");
                 app.manage(ShortcutError(message));
             }
+            apply_blur(app.handle(), blur_enabled_now(app.handle()));
+            let blur = CheckMenuItem::with_id(app, "blur", "Blur background", true, blur_enabled_now(app.handle()), None::<&str>)?;
             let open = MenuItem::with_id(app, "open", "Open Lumen", true, None::<&str>)?;
             let refresh = MenuItem::with_id(app, "refresh", "Refresh index", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit Lumen", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &refresh, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &refresh, &blur, &quit])?;
             let icon = tauri::image::Image::new_owned(tray_pixels(), 32, 32);
             TrayIconBuilder::new().icon(icon).tooltip("Lumen · Alt + Space").menu(&menu)
                 .show_menu_on_left_click(true)
-                .on_menu_event(|app, event| match event.id.as_ref() {
+                .on_menu_event(move |app, event| match event.id.as_ref() {
                     "open" => show(app),
                     "refresh" => app.state::<Arc<Index>>().inner().rebuild_system(),
+                    "blur" => {
+                        let on = !blur_enabled_now(app);
+                        if let Some(marker) = blur_marker(app) {
+                            if on { let _ = std::fs::remove_file(marker); } else { let _ = std::fs::write(marker, ""); }
+                        }
+                        let _ = blur.set_checked(on);
+                        apply_blur(app, on);
+                    }
                     "quit" => app.exit(0),
                     _ => {}
                 }).build(app)?;

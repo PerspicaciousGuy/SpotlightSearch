@@ -24,6 +24,7 @@
         "resizable": false,
         "skipTaskbar": true,
         "transparent": true,
+        "theme": "Light",
         "shadow": false
       }
     ],

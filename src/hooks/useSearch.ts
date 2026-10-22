@@ -74,7 +74,15 @@ export function useSearch(query: string, kind: string, active = true) {
     if (changed || selectedId.current === undefined) setBusy(true);
     queue.current!.submit({ query, kind, changed });
     return () => queue.current!.clear();
-  }, [query, kind, active, visible, status.indexed, status.indexing]);
+  }, [query, kind, active, visible]);
+  // New index entries can change the results, but an indexing status tick must not
+  // cancel the search the user is waiting for, so it only refreshes an idle queue.
+  const current = useRef({ query, kind, active, visible });
+  current.current = { query, kind, active, visible };
+  useEffect(() => {
+    const { query, kind, active, visible } = current.current;
+    if (query.trim() && active && visible) queue.current!.submitIfIdle({ query, kind, changed: false });
+  }, [status.indexed, status.indexing]);
   useEffect(() => {
     if (active && visible) document.getElementById(`result-${selected}`)?.scrollIntoView({ block: 'nearest' });
   }, [selected, active, visible]);

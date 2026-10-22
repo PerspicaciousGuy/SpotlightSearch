@@ -1,0 +1,9 @@
+# /usr, 84,410 entries, Linux cloud environment, warm filesystem cache
+## before
+First scan: 84410 entries in 2.51 s
+Rescan 1 (unchanged tree): 84410 entries in 0.44 s
+Rescan 2 (unchanged tree): 84410 entries in 0.45 s
+## after
+First scan: 84410 entries in 2.20 s
+Rescan 1 (unchanged tree): 84410 entries in 0.33 s
+Rescan 2 (unchanged tree): 84410 entries in 0.36 s

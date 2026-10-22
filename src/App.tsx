@@ -20,6 +20,7 @@ export default function App() {
   const [opening, setOpening] = useState(false);
   const [notice, setNotice] = useState('');
   const [shortcutWarning, setShortcutWarning] = useState('');
+  const [blur, setBlur] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const panel = useRef<HTMLElement>(null);
   const search = useSearch(query, kind, !hidden && focused);
@@ -37,8 +38,12 @@ export default function App() {
     const opened = listen('launcher-open', () => { setFocused(true); focus(); input.current?.select(); });
     const focusChanged = getCurrentWindow().onFocusChanged(event => setFocused(event.payload));
     const warning = listen<string>('shortcut-error', event => setShortcutWarning(event.payload));
-    return () => { void opened.then(unlisten => unlisten()); void warning.then(unlisten => unlisten()); void focusChanged.then(unlisten => unlisten()); };
+    // The tray menu toggles blur at runtime; the startup event can arrive before this listener exists.
+    const blurChanged = listen<boolean>('blur-changed', event => setBlur(event.payload));
+    void api.blurEnabled().then(setBlur).catch(() => {});
+    return () => { void opened.then(unlisten => unlisten()); void warning.then(unlisten => unlisten()); void focusChanged.then(unlisten => unlisten()); void blurChanged.then(unlisten => unlisten()); };
   }, []);
+  useEffect(() => { document.documentElement.dataset.blur = blur ? 'on' : 'off'; }, [blur]);
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
       if (!api.native && event.altKey && event.code === 'Space') { event.preventDefault(); setHidden(old => !old); requestAnimationFrame(focus); }
@@ -56,7 +61,9 @@ export default function App() {
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const height = Math.ceil(panel.current!.getBoundingClientRect().height + 40);
+        // The shell's padding is the transparent margin around the panel; blur mode removes it.
+        const margin = parseFloat(getComputedStyle(panel.current!.parentElement!).paddingTop) || 0;
+        const height = Math.ceil(panel.current!.getBoundingClientRect().height + margin * 2);
         if (height === lastHeight) return;
         lastHeight = height;
         void getCurrentWindow().setSize(new LogicalSize(820, height)).catch(error => setError(String(error)));
@@ -64,7 +71,7 @@ export default function App() {
     });
     observer.observe(panel.current);
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
-  }, []);
+  }, [blur]);
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(''), 4000);

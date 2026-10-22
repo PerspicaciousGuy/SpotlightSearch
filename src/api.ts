@@ -14,3 +14,4 @@ export async function search(query: string, kind: string): Promise<Result[]> {
 export const status = () => native ? invoke<Status>('index_status') : Promise.resolve({ indexing: false, indexed: demo ? demoFiles.length : 0, skipped: 0, error: null });
 export const refresh = () => invoke('rebuild_index');
 export const open = (id: number) => invoke('open_result', { id });
+export const blurEnabled = () => native ? invoke<boolean>('blur_enabled') : Promise.resolve(false);

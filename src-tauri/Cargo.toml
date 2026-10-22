@@ -27,7 +27,7 @@ tauri-build = { version = "2", optional = true }
 serde = { version = "1", features = ["derive"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
 walkdir = "2"
-dirs = "6"
+dirs = "7"
 tauri = { version = "2", features = ["tray-icon"], optional = true }
 tauri-plugin-global-shortcut = { version = "2", optional = true }
 open = { version = "5", optional = true }

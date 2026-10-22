@@ -9,7 +9,7 @@ Performance is the primary constraint. Keep shortcut response, typing, and openi
 - Stopped frontend polling/search work while hidden, unfocused, or in a hidden browser tab. Active status polls are sequential: 2 seconds during indexing, 10 seconds otherwise. The indexer can still run in the background.
 - Reused one SQLite reader with a 2 MiB page-cache target and four cached statements, separate from the WAL writer. This setting is not a total process-memory limit.
 - Searched exact/prefix matches first. When those fill 40 slots, substring searching is skipped. Otherwise, a direct FTS join streams remaining matches in row-ID order and stops after filling the list.
-- Removed full-hit-set sorting from the prefix tier. Prefix matches now come from the `name_lower` index in name order (an exact name sorts first), so SQLite stops after 40 rows however many names share the prefix. This replaces shortest-name ordering among prefix matches with alphabetical order.
+- Removed full-hit-set sorting from the prefix tier. Prefix matches now come from the `name_lower` index in name order, so SQLite stops after 40 rows however many names share the prefix. This replaces shortest-name ordering among prefix matches with alphabetical order. Apps are listed ahead of files and folders within each tier; see "Apps-first ranking" below.
 - Removed full-hit-set sorting from the substring tier. This intentionally changes substring ties from shortest-name ordering to stable index order. Exact/prefix priority remains, and prefix ties retain their original ordering.
 - Indexed each file with one upsert statement instead of an insert plus a separate update for known paths, reused writer statements across batches, and set `synchronous=NORMAL` on the writer so WAL batches no longer sync on every commit.
 - Stopped re-running the active search on every indexing status tick. A status tick now refreshes results only when nothing else is queued, so it cannot discard a search the user is waiting for.
@@ -53,6 +53,15 @@ cargo run --release --manifest-path src-tauri/Cargo.toml --example scan_bench --
 ```
 
 On Windows, substitute a temporary Windows path, such as `C:\Temp\lumen-bench.sqlite3`. The fixture contains synthetic paths and does not scan or open personal files. It creates a database of approximately 271 MiB at one million entries; repeat with the same size/path to reuse it. Remove the fixture when finished. There are no timing assertions in unit tests.
+
+## Apps-first ranking
+
+In the All tab, apps now come before files and folders within each tier: app prefix matches, other prefix matches, app substring matches, then other substring matches. Before this, 40 identically named folders (for example many `Trading` folders) could fill the list and hide an app whose name merely started with the same text.
+
+- A small partial index (`files_app_name`, apps only) is created at the start of every scan if it is missing. On the 1M-entry fixture it built in about 0.13 ms and added about 3 MB (0.09 s and 2.7 MB in a separate trial). Every `.exe`, `.lnk` and `.appref-ms` counts as an app, so a real index may hold far more apps than you expect.
+- Prefix lookups use that index with the literal `kind='app'` filter. App substring matches scan only the app index, because streaming FTS hits and filtering them to apps would traverse every hit for a broad term.
+- Measured on the 1M-entry fixture, which has 76,924 apps ([raw](performance/results/apps-first-1m.txt)): broad queries stay at about 0.03–0.08 ms p50, but a query that matches nothing now costs about 4.7 ms p50 (was about 0.03 ms) and the Apps tab for `code` about 3.7 ms (was about 0.16 ms). Both pay for scanning the app index, so the cost grows with the number of apps. The statement cache grew from 4 to 12 entries because each search can now use up to four statements.
+- Exact-name matches are not ranked ahead of apps. Typing `trading` can show `TradingView` before a folder named exactly `Trading`; that is intentional.
 
 ## Acrylic blur experiment
 

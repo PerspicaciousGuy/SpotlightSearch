@@ -1,0 +1,13 @@
+Index open: 9.482 ms; database: /tmp/bench-run.sqlite3
+App index ensured: 129.944 ms
+des            all  hits=40 p50=   0.031 ms p95=   0.042 ms
+budget         file hits=40 p50=   0.032 ms p95=   0.044 ms
+project        all  hits=40 p50=   0.041 ms p95=   0.062 ms
+1              all  hits=40 p50=   0.043 ms p95=   0.052 ms
+de             all  hits=40 p50=   0.042 ms p95=   0.054 ms
+日本語            all  hits=40 p50=   0.042 ms p95=   0.058 ms
+100%           file hits=40 p50=   0.042 ms p95=   0.058 ms
+2026           all  hits=40 p50=   0.075 ms p95=   0.123 ms
+no-such-file   all  hits= 0 p50=   4.653 ms p95=   6.400 ms
+code           app  hits=40 p50=   3.728 ms p95=   4.009 ms
+All queries: p50=0.043 ms p95=4.653 ms (300 samples)

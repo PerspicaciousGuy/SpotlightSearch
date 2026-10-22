@@ -77,6 +77,10 @@ fn main() {
         started.elapsed().as_secs_f64() * 1000.0,
         db.display()
     );
+    // The app-tier partial index is normally built by the first scan; build it for old fixtures too.
+    let started = Instant::now();
+    index.ensure_indexes().unwrap();
+    println!("App index ensured: {:.3} ms", started.elapsed().as_secs_f64() * 1000.0);
     let cases = [
         ("des", "all"),
         ("budget", "file"),

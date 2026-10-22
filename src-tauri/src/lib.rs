@@ -55,7 +55,7 @@ impl Index {
         // The scanner uses a separate writer; WAL readers can search during each batch.
         sql(conn.execute_batch("PRAGMA query_only=ON; PRAGMA cache_size=-2048;"))?;
         sql(conn.busy_timeout(std::time::Duration::from_millis(100)))?;
-        conn.set_prepared_statement_cache_capacity(4);
+        conn.set_prepared_statement_cache_capacity(12);
         Ok(Arc::new(Self {
             db,
             reader: Mutex::new(conn),
@@ -111,6 +111,7 @@ impl Index {
     }
     fn scan_with(&self, roots: Vec<PathBuf>, packaged_apps: bool) -> Result<()> {
         let mut conn = self.connect()?;
+        sql(conn.execute_batch(APP_INDEX))?;
         let generation: i64 = sql(conn.query_row(
             "SELECT COALESCE(MAX(generation),0)+1 FROM files",
             [],
@@ -192,6 +193,12 @@ impl Index {
         self.count.fetch_add(added, Ordering::Relaxed);
         Ok(())
     }
+    /// Apps are rare, so a small partial index lets the app tier of every search run without
+    /// scanning the (much larger) file and folder entries. Safe to call repeatedly.
+    pub fn ensure_indexes(&self) -> Result<()> {
+        let conn = self.connect()?;
+        sql(conn.execute_batch(APP_INDEX))
+    }
     pub fn search(&self, query: &str, kind: &str) -> Result<Vec<SearchResult>> {
         let query = query.trim().to_lowercase();
         if query.is_empty() {
@@ -204,44 +211,43 @@ impl Index {
             .reader
             .lock()
             .map_err(|_| "Search connection is unavailable.".to_string())?;
-        let prefix = format!(
-            "{}%",
-            query
-                .replace('\\', "\\\\")
-                .replace('%', "\\%")
-                .replace('_', "\\_")
-        );
-        // Exact and prefix matches always outrank substring matches. Walk the
-        // name_lower index in order instead of sorting every prefix hit by length:
-        // an exact name is the smallest string with its own prefix, so it comes
-        // first, and SQLite stops after 40 rows however many names share the prefix.
-        let mut results = {
-            let mut statement = sql(conn.prepare_cached(
-                "SELECT f.id,f.name,f.path,f.kind FROM files f
-                 WHERE f.name_lower LIKE ?1 ESCAPE '\\' AND (?2='all' OR f.kind=?2)
-                 ORDER BY f.name_lower COLLATE NOCASE LIMIT 40",
-            ))?;
-            let rows = sql(statement.query_map(params![prefix, kind], search_result))?;
-            sql(rows.collect::<rusqlite::Result<Vec<_>>>())?
-        };
-        if results.len() == 40 || query.chars().count() < 3 {
+        let escaped = query
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
+        let prefix = format!("{escaped}%");
+        let contains = format!("%{escaped}%");
+        let left = |results: &Vec<SearchResult>| (LIMIT - results.len()) as i64;
+        let mut results = Vec::with_capacity(LIMIT);
+        // Exact/prefix matches outrank substring matches, and within each tier apps come
+        // before files and folders. Every query walks an index in name order and stops once
+        // the list is full, so a name shared by thousands of folders cannot push an app off
+        // the list and no tier sorts a full hit set.
+        if kind == "all" || kind == "app" {
+            fetch(&conn, APP_PREFIX, params![prefix, left(&results)], &mut results)?;
+        }
+        if results.len() < LIMIT {
+            match kind {
+                "all" => fetch(&conn, OTHER_PREFIX, params![prefix, left(&results)], &mut results)?,
+                "app" => {}
+                _ => fetch(&conn, KIND_PREFIX, params![prefix, kind, left(&results)], &mut results)?,
+            }
+        }
+        if results.len() == LIMIT || query.chars().count() < 3 {
             return Ok(results);
         }
-        // FTS emits row IDs in index order. Keep that stable order within the
-        // substring tier rather than sorting every hit just to return forty.
-        // A common suffix can match millions of names; this lets SQLite stop
-        // once the remaining slots are filled without materializing the hit set.
-        let term = format!("\"{}\"", query.replace('"', "\"\""));
-        let remaining = (40 - results.len()) as i64;
-        let mut statement = sql(conn.prepare_cached(
-            "SELECT f.id,f.name,f.path,f.kind FROM names
-             JOIN files f ON f.id=names.rowid
-             WHERE names MATCH ?1 AND (?2='all' OR f.kind=?2)
-                   AND f.name_lower NOT LIKE ?3 ESCAPE '\\'
-             ORDER BY names.rowid LIMIT ?4",
-        ))?;
-        let rows = sql(statement.query_map(params![term, kind, prefix, remaining], search_result))?;
-        results.extend(sql(rows.collect::<rusqlite::Result<Vec<_>>>())?);
+        // Substring tier. App names are scanned directly (there are few); everything else
+        // streams from FTS in row-ID order, which is stable and lets SQLite stop early.
+        if kind == "all" || kind == "app" {
+            fetch(&conn, APP_SUBSTRING, params![contains, prefix, left(&results)], &mut results)?;
+        }
+        if results.len() < LIMIT && kind != "app" {
+            let term = format!("\"{}\"", query.replace('"', "\"\""));
+            match kind {
+                "all" => fetch(&conn, OTHER_SUBSTRING, params![term, prefix, left(&results)], &mut results)?,
+                _ => fetch(&conn, KIND_SUBSTRING, params![term, prefix, left(&results), kind], &mut results)?,
+            }
+        }
         Ok(results)
     }
 
@@ -253,6 +259,29 @@ impl Index {
         let mut statement = sql(conn.prepare_cached("SELECT path FROM files WHERE id=?1"))?;
         sql(statement.query_row([id], |r| r.get::<_, String>(0))).map(PathBuf::from)
     }
+}
+const LIMIT: usize = 40;
+const APP_INDEX: &str = "CREATE INDEX IF NOT EXISTS files_app_name ON files(name_lower COLLATE NOCASE) WHERE kind='app';";
+// The literal kind='app' is what lets SQLite use the partial index above.
+const APP_PREFIX: &str = "SELECT id,name,path,kind FROM files WHERE kind='app' AND name_lower LIKE ?1 ESCAPE '\\' ORDER BY name_lower COLLATE NOCASE LIMIT ?2";
+const OTHER_PREFIX: &str = "SELECT id,name,path,kind FROM files WHERE kind<>'app' AND name_lower LIKE ?1 ESCAPE '\\' ORDER BY name_lower COLLATE NOCASE LIMIT ?2";
+const KIND_PREFIX: &str = "SELECT id,name,path,kind FROM files WHERE name_lower LIKE ?1 ESCAPE '\\' AND kind=?2 ORDER BY name_lower COLLATE NOCASE LIMIT ?3";
+const APP_SUBSTRING: &str = "SELECT id,name,path,kind FROM files WHERE kind='app' AND name_lower LIKE ?1 ESCAPE '\\' AND name_lower NOT LIKE ?2 ESCAPE '\\' ORDER BY name_lower COLLATE NOCASE LIMIT ?3";
+const OTHER_SUBSTRING: &str = "SELECT f.id,f.name,f.path,f.kind FROM names JOIN files f ON f.id=names.rowid WHERE names MATCH ?1 AND f.kind<>'app' AND f.name_lower NOT LIKE ?2 ESCAPE '\\' ORDER BY names.rowid LIMIT ?3";
+const KIND_SUBSTRING: &str = "SELECT f.id,f.name,f.path,f.kind FROM names JOIN files f ON f.id=names.rowid WHERE names MATCH ?1 AND f.kind=?4 AND f.name_lower NOT LIKE ?2 ESCAPE '\\' ORDER BY names.rowid LIMIT ?3";
+
+fn fetch(
+    conn: &Connection,
+    statement: &str,
+    params: impl rusqlite::Params,
+    results: &mut Vec<SearchResult>,
+) -> Result<()> {
+    let mut statement = sql(conn.prepare_cached(statement))?;
+    let rows = sql(statement.query_map(params, search_result))?;
+    for row in rows {
+        results.push(sql(row)?);
+    }
+    Ok(())
 }
 fn search_result(row: &rusqlite::Row<'_>) -> rusqlite::Result<SearchResult> {
     Ok(SearchResult {
@@ -409,9 +438,68 @@ mod tests {
             .into_iter()
             .map(|item| item.name)
             .collect();
-        assert_eq!(names, ["trading notes.txt", "trading.exe"]);
+        assert_eq!(names, ["trading.exe", "trading notes.txt"]);
         // The Recent folders themselves are skipped, an unrelated "Recent" is not.
         assert_eq!(index.search("recent", "folder").unwrap().len(), 1);
+        drop(index);
+        std::fs::remove_dir_all(temp).unwrap();
+    }
+
+    fn add_entries(index: &Index, root: &Path, entries: &[(String, &'static str)]) {
+        let mut batch = entries
+            .iter()
+            .enumerate()
+            .map(|(n, (name, kind))| {
+                // Distinct paths so identical names (the same folder name in many places) coexist.
+                let path = root.join(format!("{n}")).join(name).to_string_lossy().into_owned();
+                (name.clone(), path, *kind)
+            })
+            .collect();
+        index.flush(&mut index.connect().unwrap(), &mut batch, 1).unwrap();
+        index.ensure_indexes().unwrap();
+    }
+
+    #[test]
+    fn apps_outrank_many_identically_named_folders() {
+        let (temp, root, index) = fixture("apps-first");
+        // More same-name folders than fit in the list, inserted before the app.
+        let mut entries: Vec<(String, &'static str)> = (0..60).map(|_| ("Trading".to_string(), "folder")).collect();
+        entries.push(("TradingView".to_string(), "app"));
+        entries.push(("Trading journal.txt".to_string(), "file"));
+        add_entries(&index, &root, &entries);
+        let all = index.search("trading", "all").unwrap();
+        assert_eq!(all.len(), 40);
+        assert_eq!(all[0].name, "TradingView");
+        assert_eq!(all[0].kind, "app");
+        assert!(all[1..].iter().all(|item| item.kind != "app"));
+        // The app tab and the folder tab each stay inside their own category.
+        let apps = index.search("trading", "app").unwrap();
+        assert_eq!(apps.len(), 1);
+        assert_eq!(apps[0].name, "TradingView");
+        assert!(index.search("trading", "folder").unwrap().iter().all(|item| item.kind == "folder"));
+        drop(index);
+        std::fs::remove_dir_all(temp).unwrap();
+    }
+
+    #[test]
+    fn app_substrings_rank_after_prefixes_and_before_other_substrings() {
+        let (temp, root, index) = fixture("app-substrings");
+        let entries: Vec<(String, &'static str)> = vec![
+            ("my code notes.txt".to_string(), "file"),
+            ("Visual Studio Code".to_string(), "app"),
+            ("code".to_string(), "folder"),
+            ("Codeblocks".to_string(), "app"),
+            ("another code folder".to_string(), "folder"),
+        ];
+        add_entries(&index, &root, &entries);
+        let names: Vec<_> = index.search("code", "all").unwrap().into_iter().map(|item| item.name).collect();
+        // prefix: app, then folder; substring: app, then others in index order.
+        assert_eq!(names, ["Codeblocks", "code", "Visual Studio Code", "my code notes.txt", "another code folder"]);
+        let unique: std::collections::HashSet<_> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+        // Two characters match prefixes only, apps still first.
+        let short: Vec<_> = index.search("co", "all").unwrap().into_iter().map(|item| item.name).collect();
+        assert_eq!(short, ["Codeblocks", "code"]);
         drop(index);
         std::fs::remove_dir_all(temp).unwrap();
     }
@@ -466,9 +554,10 @@ mod tests {
         for _ in 0..3 {
             let matches = index.search("BUDGET", "all").unwrap();
             assert_eq!(matches.len(), 40);
-            // Exact name first, then prefix matches in case-insensitive name order.
-            assert_eq!(matches[0].name, "budget");
-            assert_eq!(matches[1].name, "budget extra 00.txt");
+            // Apps lead within the prefix tier, then files in case-insensitive name order.
+            assert_eq!(matches[0].name, "budget.exe");
+            assert_eq!(matches[1].name, "budget");
+            assert_eq!(matches[2].name, "budget extra 00.txt");
             assert!(matches
                 .iter()
                 .all(|item| item.name.to_lowercase().starts_with("budget")));

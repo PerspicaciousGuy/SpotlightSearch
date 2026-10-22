@@ -412,7 +412,7 @@ pub fn search_roots() -> Vec<PathBuf> {
 mod tests {
     use super::*;
     fn fixture(label: &str) -> (PathBuf, PathBuf, Arc<Index>) {
-        let temp = std::env::temp_dir().join(format!("lumen-{label}-{}", std::process::id()));
+        let temp = std::env::temp_dir().join(format!("gleam-{label}-{}", std::process::id()));
         let root = temp.join("files");
         std::fs::create_dir_all(&root).unwrap();
         let index = Index::new(temp.join("index.db")).unwrap();
@@ -700,7 +700,7 @@ mod tests {
 
     #[test]
     fn scan_search_and_refresh() {
-        let temp = std::env::temp_dir().join(format!("lumen-test-{}", std::process::id()));
+        let temp = std::env::temp_dir().join(format!("gleam-test-{}", std::process::id()));
         let root = temp.join("files");
         std::fs::create_dir_all(root.join("node_modules")).unwrap();
         for file in [

@@ -106,8 +106,8 @@ export default function App() {
     try { await api.open(file.id); } catch (error) { setError(String(error)); } finally { setOpening(false); }
   };
   return <div className={api.native ? 'app-shell native-shell' : 'app-shell preview-shell'}>
-    {!api.native && <div className="preview-toolbar"><span className="preview-brand"><Search size={15} />Lumen<span>for Windows</span></span><a href={api.demo ? '/' : '/?demo=1'}>{api.demo ? 'Exit sample preview' : 'Explore sample files'} <ArrowUpRight size={13} aria-hidden="true" /></a></div>}
-    {hidden ? <button className="reopen-button" onClick={show}><Search size={18} />Open Lumen<kbd>Alt + Space</kbd></button> : <main ref={panel} className={`launcher${expanded ? ' is-expanded' : ''}`} aria-label="Lumen search" onKeyDown={event => {
+    {!api.native && <div className="preview-toolbar"><span className="preview-brand"><Search size={15} />Gleam<span>for Windows</span></span><a href={api.demo ? '/' : '/?demo=1'}>{api.demo ? 'Exit sample preview' : 'Explore sample files'} <ArrowUpRight size={13} aria-hidden="true" /></a></div>}
+    {hidden ? <button className="reopen-button" onClick={show}><Search size={18} />Open Gleam<kbd>Alt + Space</kbd></button> : <main ref={panel} className={`launcher${expanded ? ' is-expanded' : ''}`} aria-label="Gleam search" onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); if (query || kind !== 'all') { setQuery(''); setKind('all'); setNotice(''); focus(); } else hide(); }
     }}>
       <div className="drag-handle" data-tauri-drag-region aria-hidden="true" />
@@ -130,7 +130,7 @@ export default function App() {
               else if (event.key === 'Enter' && results[selected]) { event.preventDefault(); void launch(results[selected]); }
             }
           }} />
-        {query ? <button className="icon-button clear-button" aria-label="Clear search" onClick={() => { setQuery(''); setNotice(''); focus(); }}><X size={16} /></button> : <button className="hide-button" onClick={hide} aria-label="Hide Lumen"><kbd>esc</kbd></button>}
+        {query ? <button className="icon-button clear-button" aria-label="Clear search" onClick={() => { setQuery(''); setNotice(''); focus(); }}><X size={16} /></button> : <button className="hide-button" onClick={hide} aria-label="Hide Gleam"><kbd>esc</kbd></button>}
       </div>
       <div className="filter-row">
         <nav aria-label="Result type">{filters.map((filter, index) => <button key={filter.id} className={`filter-button${kind === filter.id ? ' is-active' : ''}`} aria-pressed={kind === filter.id} aria-keyshortcuts={`Control+${index + 1}`} title={`${filter.label} · Ctrl + ${index + 1}`} onClick={() => { setKind(filter.id); focus(); }}><filter.icon size={14} strokeWidth={1.8} /><span>{filter.label}</span></button>)}</nav>

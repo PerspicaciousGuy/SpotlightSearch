@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn icons_are_extracted_once_and_refreshed_when_the_file_changes() {
-        let temp = std::env::temp_dir().join(format!("lumen-icons-{}", std::process::id()));
+        let temp = std::env::temp_dir().join(format!("gleam-icons-{}", std::process::id()));
         let cache = temp.join("cache");
         std::fs::create_dir_all(&temp).unwrap();
         let app = temp.join("app.exe");
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn missing_icons_are_not_cached_and_store_apps_need_no_file() {
-        let temp = std::env::temp_dir().join(format!("lumen-icons-none-{}", std::process::id()));
+        let temp = std::env::temp_dir().join(format!("gleam-icons-none-{}", std::process::id()));
         let none = |_: &str, _: i32| None;
         let store = Path::new("shell:AppsFolder\\Pkg_x!App");
         assert!(cached_icon(store, Some(&temp), 64, none).is_none());

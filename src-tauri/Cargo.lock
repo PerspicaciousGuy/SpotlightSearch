@@ -1110,6 +1110,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gleam-search"
+version = "0.1.0"
+dependencies = [
+ "dirs 6.0.0",
+ "open",
+ "png",
+ "rusqlite",
+ "serde",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-global-shortcut",
+ "walkdir",
+ "windows",
+]
+
+[[package]]
 name = "glib"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1860,22 +1876,6 @@ name = "log"
 version = "0.4.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
-
-[[package]]
-name = "lumen-search"
-version = "0.1.0"
-dependencies = [
- "dirs 6.0.0",
- "open",
- "png",
- "rusqlite",
- "serde",
- "tauri",
- "tauri-build",
- "tauri-plugin-global-shortcut",
- "walkdir",
- "windows",
-]
 
 [[package]]
 name = "markup5ever"

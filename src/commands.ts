@@ -28,7 +28,7 @@ export function matchingCommands(text: string): Command[] {
   return found.length ? found : commands;
 }
 
-const STORAGE_KEY = 'lumen.recent';
+const STORAGE_KEY = 'gleam.recent';
 export const MAX_RECENT = 10;
 
 // Newest first, one entry per query and category, capped at MAX_RECENT.

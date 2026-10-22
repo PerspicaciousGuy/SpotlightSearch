@@ -1,6 +1,6 @@
 //! Reproducible search-core benchmark; no GUI, no user files, no timing assertions.
 //! cargo run --release --example search_bench -- [database-path] [entry-count]
-use lumen_search::Index;
+use gleam_search::Index;
 use rusqlite::{params, Connection};
 use std::{path::PathBuf, time::Instant};
 
@@ -9,7 +9,7 @@ fn main() {
     let db = args
         .next()
         .map(PathBuf::from)
-        .unwrap_or_else(|| std::env::temp_dir().join("lumen-search-benchmark.sqlite3"));
+        .unwrap_or_else(|| std::env::temp_dir().join("gleam-search-benchmark.sqlite3"));
     let entries: usize = args
         .next()
         .map(|value| value.parse().expect("entry count must be an integer"))

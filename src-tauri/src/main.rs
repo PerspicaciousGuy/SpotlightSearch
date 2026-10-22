@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use lumen_search::{icons, Index, IndexStatus, SearchResult, APPS_FOLDER};
+use gleam_search::{icons, Index, IndexStatus, SearchResult, APPS_FOLDER};
 use std::sync::Arc;
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem},
@@ -123,17 +123,17 @@ fn main() {
             index.rebuild_system();
             // A shortcut conflict is surfaced to the user; the tray can still open the app.
             if let Err(error) = app.global_shortcut().register("Alt+Space") {
-                let message = format!("Alt + Space could not be registered: {error}. Open Lumen from the system tray.");
+                let message = format!("Alt + Space could not be registered: {error}. Open Gleam from the system tray.");
                 app.manage(ShortcutError(message));
             }
             apply_blur(app.handle(), blur_enabled_now(app.handle()));
             let blur = CheckMenuItem::with_id(app, "blur", "Blur background", true, blur_enabled_now(app.handle()), None::<&str>)?;
-            let open = MenuItem::with_id(app, "open", "Open Lumen", true, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", "Open Gleam", true, None::<&str>)?;
             let refresh = MenuItem::with_id(app, "refresh", "Refresh index", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit Lumen", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit Gleam", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &refresh, &blur, &quit])?;
             let icon = tauri::image::Image::new_owned(tray_pixels(), 32, 32);
-            TrayIconBuilder::new().icon(icon).tooltip("Lumen · Alt + Space").menu(&menu)
+            TrayIconBuilder::new().icon(icon).tooltip("Gleam · Alt + Space").menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(move |app, event| match event.id.as_ref() {
                     "open" => show(app),
@@ -159,7 +159,7 @@ fn main() {
                 if let Some(error) = window.app_handle().try_state::<ShortcutError>() { let _ = window.emit("shortcut-error", &error.0); }
             }
         })
-        .run(tauri::generate_context!()).expect("Unable to start Lumen");
+        .run(tauri::generate_context!()).expect("Unable to start Gleam");
 }
 struct ShortcutError(String);
 fn tray_pixels() -> Vec<u8> {

@@ -1,15 +1,15 @@
 name: Bug report
-description: Something in Lumen does not work as expected
+description: Something in Gleam does not work as expected
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. Lumen indexes file names and paths, so **please remove or blur anything private** (user names, project names, paths) from logs and screenshots.
+        Thanks for reporting. Gleam indexes file names and paths, so **please remove or blur anything private** (user names, project names, paths) from logs and screenshots.
   - type: input
     id: version
     attributes:
-      label: Lumen version
+      label: Gleam version
       description: From the installer file name or the release you downloaded.
       placeholder: "0.1.0"
     validations:

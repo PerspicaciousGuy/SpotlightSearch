@@ -1,11 +1,11 @@
-# Contributing to Lumen
+# Contributing to Gleam
 
-Thanks for taking an interest. Lumen is a small project with one maintainer, so please keep changes focused and expect replies on a best-effort basis.
+Thanks for taking an interest. Gleam is a small project with one maintainer, so please keep changes focused and expect replies on a best-effort basis.
 
 ## Before you start
 
 - For anything larger than a small fix, open an issue first so we can agree on the direction. Performance is the main constraint: keep the shortcut response, typing and opening results fast before adding visual effects or features.
-- Lumen only targets Windows. The core search code (`src-tauri/src/lib.rs`) and the browser preview also run on Linux and macOS, which is how most of it is tested, but the app itself, the shell icons, Store app listing and the Acrylic blur are Windows-only.
+- Gleam only targets Windows. The core search code (`src-tauri/src/lib.rs`) and the browser preview also run on Linux and macOS, which is how most of it is tested, but the app itself, the shell icons, Store app listing and the Acrylic blur are Windows-only.
 
 ## Setup
 
@@ -25,7 +25,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib  # search, indexing and ic
 cargo check --manifest-path src-tauri/Cargo.toml --features desktop   # needs the Tauri prerequisites for your OS
 ```
 
-The [Windows build workflow](https://github.com/PerspicaciousGuy/SpotlightSearch/actions/workflows/windows.yml) runs the tests and builds the installer on every push and pull request.
+The [Windows build workflow](https://github.com/PerspicaciousGuy/gleam/actions/workflows/windows.yml) runs the tests and builds the installer on every push and pull request.
 
 ## Guidelines
 

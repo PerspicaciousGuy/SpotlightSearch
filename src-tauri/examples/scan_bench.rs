@@ -1,6 +1,6 @@
 //! Reproducible indexer benchmark: a first scan, then a rescan of the unchanged tree.
 //! cargo run --release --example scan_bench -- <fresh-database-path> <directory-to-scan>
-use lumen_search::Index;
+use gleam_search::Index;
 use std::{path::PathBuf, time::Instant};
 
 fn scan(index: &std::sync::Arc<Index>, root: &PathBuf) -> (f64, u64) {

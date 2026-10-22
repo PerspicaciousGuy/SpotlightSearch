@@ -43,16 +43,16 @@ Raw results: [100k before](performance/results/before-100k.txt), [100k after](pe
 Reproduce the current core benchmark with a fresh temporary database path:
 
 ```sh
-cargo run --release --manifest-path src-tauri/Cargo.toml --example search_bench -- /tmp/lumen-bench.sqlite3 1000000
+cargo run --release --manifest-path src-tauri/Cargo.toml --example search_bench -- /tmp/gleam-bench.sqlite3 1000000
 ```
 
 Reproduce the indexer benchmark with a fresh database path and any directory to scan (it reads names only):
 
 ```sh
-cargo run --release --manifest-path src-tauri/Cargo.toml --example scan_bench -- /tmp/lumen-scan.sqlite3 /usr
+cargo run --release --manifest-path src-tauri/Cargo.toml --example scan_bench -- /tmp/gleam-scan.sqlite3 /usr
 ```
 
-On Windows, substitute a temporary Windows path, such as `C:\Temp\lumen-bench.sqlite3`. The fixture contains synthetic paths and does not scan or open personal files. It creates a database of approximately 271 MiB at one million entries; repeat with the same size/path to reuse it. Remove the fixture when finished. There are no timing assertions in unit tests.
+On Windows, substitute a temporary Windows path, such as `C:\Temp\gleam-bench.sqlite3`. The fixture contains synthetic paths and does not scan or open personal files. It creates a database of approximately 271 MiB at one million entries; repeat with the same size/path to reuse it. Remove the fixture when finished. There are no timing assertions in unit tests.
 
 ## Apps-first ranking
 
@@ -65,7 +65,7 @@ In the All tab, apps now come before files and folders within each tier: app pre
 
 ## Acrylic blur experiment
 
-Lumen can ask Windows 11 for an Acrylic window backdrop (Tauri `set_effects`, backed by the `window-vibrancy` crate). It is on by default and can be turned off at runtime from the tray menu (**Blur background**); the choice is stored as an empty `blur-off` file in the app data directory.
+Gleam can ask Windows 11 for an Acrylic window backdrop (Tauri `set_effects`, backed by the `window-vibrancy` crate). It is on by default and can be turned off at runtime from the tray menu (**Blur background**); the choice is stored as an empty `blur-off` file in the app data directory.
 
 - On Windows 11 build 22523 or newer the crate uses the system backdrop API (`DWMWA_SYSTEMBACKDROP_TYPE`). The crate's README lists a resize/drag performance warning for Acrylic only on Windows 10 v1903+ and Windows 11 build 22000, and for Blur on build 22621; this implementation is neither of those paths on current builds, but **no Windows frame-time, typing or memory measurements exist for it yet**.
 - The backdrop covers the whole native window, so blur mode removes the transparent margin around the card and uses the system shadow and rounded corners (`set_shadow(true)`, which Tauri documents as giving undecorated Windows 11 windows rounded corners and a 1px border). The window is forced to the Light theme so the material matches the light UI.

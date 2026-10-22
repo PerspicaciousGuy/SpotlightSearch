@@ -39,4 +39,4 @@ jobs:
         run: |
           $dir = 'src-tauri/target/release/bundle/nsis'
           $files = @(Get-ChildItem "$dir/*.exe" | ForEach-Object { $_.FullName }) + "$dir/SHA256SUMS.txt"
-          gh release create $env:GITHUB_REF_NAME @files --title "Lumen $env:GITHUB_REF_NAME" --generate-notes --verify-tag
+          gh release create $env:GITHUB_REF_NAME @files --title "Gleam $env:GITHUB_REF_NAME" --generate-notes --verify-tag

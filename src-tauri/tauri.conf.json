@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Lumen",
+  "productName": "Gleam",
   "version": "0.1.0",
-  "identifier": "com.lumen.search",
+  "identifier": "io.github.perspicaciousguy.gleam",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Lumen",
+        "title": "Gleam",
         "width": 820,
         "height": 174,
         "minWidth": 480,
@@ -46,11 +46,11 @@
       }
     },
     "publisher": "PerspicaciousGuy",
-    "homepage": "https://github.com/PerspicaciousGuy/SpotlightSearch",
+    "homepage": "https://github.com/PerspicaciousGuy/gleam",
     "copyright": "Copyright (c) 2026 PerspicaciousGuy",
     "license": "MIT",
     "category": "Utility",
     "shortDescription": "Fast local file and app launcher",
-    "longDescription": "Lumen searches the names of your files, folders and apps with a local index. Press Alt + Space, type, and press Enter. Nothing leaves your computer."
+    "longDescription": "Gleam searches the names of your files, folders and apps with a local index. Press Alt + Space, type, and press Enter. Nothing leaves your computer."
   }
 }

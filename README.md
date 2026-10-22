@@ -1,10 +1,10 @@
-# Lumen
+# Gleam
 
-[![Windows build](https://github.com/PerspicaciousGuy/SpotlightSearch/actions/workflows/windows.yml/badge.svg)](https://github.com/PerspicaciousGuy/SpotlightSearch/actions/workflows/windows.yml)
+[![Windows build](https://github.com/PerspicaciousGuy/gleam/actions/workflows/windows.yml/badge.svg)](https://github.com/PerspicaciousGuy/gleam/actions/workflows/windows.yml)
 
 A fast, local file and app launcher for Windows, built with **Rust, Tauri 2, React and TypeScript**. Press **Alt + Space**, type a name, press **Enter**.
 
-![Lumen showing search results for "design" in the browser preview, with sample files](preview.png)
+![Gleam showing search results for "design" in the browser preview, with sample files](preview.png)
 
 *The screenshot is the browser preview with labelled sample files. The Windows app searches your own drives.*
 
@@ -15,23 +15,23 @@ A fast, local file and app launcher for Windows, built with **Rust, Tauri 2, Rea
 - Real app icons, a details pane with the full location, and a copy-path button.
 - Slash commands (`/a`, `/f`, `/o`, `/r`) and a list of recent searches, all from the keyboard.
 - Optional Windows Acrylic blur, switchable from the tray menu.
-- No network access and no telemetry in Lumen's own code. See [Privacy and data](#privacy-and-data).
+- No network access and no telemetry in Gleam's own code. See [Privacy and data](#privacy-and-data).
 
 ## Status
 
-Lumen is an early release (0.x). It is developed and tested on Windows 11 by one person, and nothing here has been verified on Windows 10. Expect rough edges, and see [what is not implemented yet](#search-behavior-and-scope). Bug reports are welcome.
+Gleam is an early release (0.x). It is developed and tested on Windows 11 by one person, and nothing here has been verified on Windows 10. Expect rough edges, and see [what is not implemented yet](#search-behavior-and-scope). Bug reports are welcome.
 
 ## Install
 
 ### Download the installer
 
-1. Open the [latest release](https://github.com/PerspicaciousGuy/SpotlightSearch/releases/latest) and download `Lumen_<version>_x64-setup.exe`.
+1. Open the [latest release](https://github.com/PerspicaciousGuy/gleam/releases/latest) and download `Gleam_<version>_x64-setup.exe`.
 2. Run it. It installs for the current user only, so it should not ask for administrator rights.
 3. The installer is **not code-signed**, so Windows SmartScreen shows "Windows protected your PC". Choose **More info**, then **Run anyway** if you trust the download.
 4. To check the file first, compare its hash with `SHA256SUMS.txt` on the release page:
 
    ```powershell
-   Get-FileHash .\Lumen_<version>_x64-setup.exe -Algorithm SHA256
+   Get-FileHash .\Gleam_<version>_x64-setup.exe -Algorithm SHA256
    ```
 
 Requirements: 64-bit Windows with the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/), which Windows 10 and 11 normally include. Uninstall from **Settings > Apps**.
@@ -48,14 +48,14 @@ Install:
 Then, in PowerShell:
 
 ```powershell
-git clone https://github.com/PerspicaciousGuy/SpotlightSearch.git
-cd SpotlightSearch
+git clone https://github.com/PerspicaciousGuy/gleam.git
+cd gleam
 npm ci
 npm run desktop   # run the app in development mode
 npm run bundle    # or build the installer under src-tauri/target/release/bundle/nsis/
 ```
 
-## Using Lumen
+## Using Gleam
 
 The first launch starts indexing in the background. Results appear as batches are saved. A full drive scan can take a while and the footer shows progress. Later launches can search the saved index while it refreshes.
 
@@ -66,25 +66,25 @@ The first launch starts indexing in the background. Results appear as batches ar
 - **Ctrl + 1 / 2 / 3 / 4:** switch All / Apps / Files / Folders
 - **Ctrl + L:** select the search field
 - **Slash commands:** type `/a ` for Apps, `/f ` for Files, or `/o ` for Folders. The prefix becomes a chip in the search box; Backspace on an empty box removes it, and Esc clears the text and the chip. Type `/` alone to list the commands (Up/Down, then Enter or Tab), or `/r` to show recent searches.
-- **Recent searches:** with an empty box, Lumen lists your last 10 searches (saved when you open a result, or when the launcher loses focus while results are showing). Select one with Up/Down and Enter, or click it. **Clear** erases the list. They are stored as plain text in the WebView's local storage on your PC, not in the file index.
+- **Recent searches:** with an empty box, Gleam lists your last 10 searches (saved when you open a result, or when the launcher loses focus while results are showing). Select one with Up/Down and Enter, or click it. **Clear** erases the list. They are stored as plain text in the WebView's local storage on your PC, not in the file index.
 - **Tray menu:** open, refresh the index, toggle the blur background, or quit
 - **Refresh button:** rescan for new, renamed, or removed files
 
-Alt + Space must be available to register as a global shortcut. If another utility owns it, use the tray menu to open Lumen. Closing the window keeps the process running; use **Quit Lumen** in the tray menu to exit.
+Alt + Space must be available to register as a global shortcut. If another utility owns it, use the tray menu to open Gleam. Closing the window keeps the process running; use **Quit Gleam** in the tray menu to exit.
 
 ## Privacy and data
 
-Lumen runs entirely on your PC. Its own code contains no network requests and no telemetry, and its content security policy allows only local connections. The Microsoft WebView2 runtime that draws the window is a separate Microsoft component that Lumen does not control.
+Gleam runs entirely on your PC. Its own code contains no network requests and no telemetry, and its content security policy allows only local connections. The Microsoft WebView2 runtime that draws the window is a separate Microsoft component that Gleam does not control.
 
-What Lumen stores, all unencrypted, in per-user folders (Tauri's app data directory for the identifier `com.lumen.search`, and the WebView2 profile for the same identifier):
+What Gleam stores, all unencrypted, in per-user folders (Tauri's app data directory for the identifier `io.github.perspicaciousguy.gleam`, and the WebView2 profile for the same identifier):
 
-- **The file index** (`index.sqlite3`): the name and full path of every file and folder Lumen could read on your drive letters, including paths you may consider private. Anyone who can read your user profile can read it.
+- **The file index** (`index.sqlite3`): the name and full path of every file and folder Gleam could read on your drive letters, including paths you may consider private. Anyone who can read your user profile can read it.
 - **Recent searches**: up to 10 query texts, in the WebView's local storage. **Clear** in the recent list erases them.
 - **An icon cache** (`icons/`), and an empty marker file (`blur-off`) while the blur is switched off.
 
-What Lumen runs: a hidden `powershell.exe` with `Get-StartApps` on each refresh (to list Microsoft Store apps), `explorer.exe` to launch those apps, and your default handler for opening files. File contents are never read.
+What Gleam runs: a hidden `powershell.exe` with `Get-StartApps` on each refresh (to list Microsoft Store apps), `explorer.exe` to launch those apps, and your default handler for opening files. File contents are never read.
 
-To remove everything, uninstall Lumen and delete its data folders. The installer's own options may handle some of this; check that they are gone.
+To remove everything, uninstall Gleam and delete its data folders. The installer's own options may handle some of this; check that they are gone.
 
 ## Performance comes first
 
@@ -130,4 +130,4 @@ Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING
 
 ## License
 
-[MIT](LICENSE) © 2026 PerspicaciousGuy. The Apple Spotlight interface was a design reference only; Lumen is an independent project and is not affiliated with or endorsed by Apple.
+[MIT](LICENSE) © 2026 PerspicaciousGuy. The Apple Spotlight interface was a design reference only; Gleam is an independent project and is not affiliated with or endorsed by Apple.

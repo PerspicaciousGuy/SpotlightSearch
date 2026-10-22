@@ -1,18 +1,18 @@
 [package]
-name = "lumen-search"
+name = "gleam-search"
 version = "0.1.0"
 edition = "2021"
 description = "A fast, local file and app launcher for Windows"
 license = "MIT"
 authors = ["PerspicaciousGuy"]
-repository = "https://github.com/PerspicaciousGuy/SpotlightSearch"
+repository = "https://github.com/PerspicaciousGuy/gleam"
 publish = false
 
 [lib]
-name = "lumen_search"
+name = "gleam_search"
 
 [[bin]]
-name = "lumen-search"
+name = "gleam-search"
 path = "src/main.rs"
 required-features = ["desktop"]
 

@@ -44,6 +44,13 @@
       "nsis": {
         "installMode": "currentUser"
       }
-    }
+    },
+    "publisher": "PerspicaciousGuy",
+    "homepage": "https://github.com/PerspicaciousGuy/SpotlightSearch",
+    "copyright": "Copyright (c) 2026 PerspicaciousGuy",
+    "license": "MIT",
+    "category": "Utility",
+    "shortDescription": "Fast local file and app launcher",
+    "longDescription": "Lumen searches the names of your files, folders and apps with a local index. Press Alt + Space, type, and press Enter. Nothing leaves your computer."
   }
 }

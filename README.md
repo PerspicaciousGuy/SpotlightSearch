@@ -1,24 +1,63 @@
 # Lumen
 
-A Windows file launcher built with **Rust, Tauri 2, React, and TypeScript**. Press **Alt + Space**, type a filename, and press **Enter** to open it.
+[![Windows build](https://github.com/PerspicaciousGuy/SpotlightSearch/actions/workflows/windows.yml/badge.svg)](https://github.com/PerspicaciousGuy/SpotlightSearch/actions/workflows/windows.yml)
 
-## Run on Windows
+A fast, local file and app launcher for Windows, built with **Rust, Tauri 2, React and TypeScript**. Press **Alt + Space**, type a name, press **Enter**.
+
+![Lumen showing search results for "design" in the browser preview, with sample files](preview.png)
+
+*The screenshot is the browser preview with labelled sample files. The Windows app searches your own drives.*
+
+## Features
+
+- Searches the **names** of files, folders, apps and Start Menu shortcuts, including Microsoft Store apps, from a local SQLite index.
+- Results as you type, ranked so that apps come first and names that start with your text come before names that merely contain it.
+- Real app icons, a details pane with the full location, and a copy-path button.
+- Slash commands (`/a`, `/f`, `/o`, `/r`) and a list of recent searches, all from the keyboard.
+- Optional Windows Acrylic blur, switchable from the tray menu.
+- No network access and no telemetry in Lumen's own code. See [Privacy and data](#privacy-and-data).
+
+## Status
+
+Lumen is an early release (0.x). It is developed and tested on Windows 11 by one person, and nothing here has been verified on Windows 10. Expect rough edges, and see [what is not implemented yet](#search-behavior-and-scope). Bug reports are welcome.
+
+## Install
+
+### Download the installer
+
+1. Open the [latest release](https://github.com/PerspicaciousGuy/SpotlightSearch/releases/latest) and download `Lumen_<version>_x64-setup.exe`.
+2. Run it. It installs for the current user only, so it should not ask for administrator rights.
+3. The installer is **not code-signed**, so Windows SmartScreen shows "Windows protected your PC". Choose **More info**, then **Run anyway** if you trust the download.
+4. To check the file first, compare its hash with `SHA256SUMS.txt` on the release page:
+
+   ```powershell
+   Get-FileHash .\Lumen_<version>_x64-setup.exe -Algorithm SHA256
+   ```
+
+Requirements: 64-bit Windows with the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/), which Windows 10 and 11 normally include. Uninstall from **Settings > Apps**.
+
+### Build from source
 
 Install:
 
 - [Node.js LTS](https://nodejs.org/)
 - [Rust through rustup](https://rustup.rs/) using the default MSVC toolchain
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with **Desktop development with C++** and a Windows SDK
-- [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (usually already on Windows 10/11)
+- WebView2 Runtime, as above
 
-Open PowerShell in this project folder:
+Then, in PowerShell:
 
 ```powershell
+git clone https://github.com/PerspicaciousGuy/SpotlightSearch.git
+cd SpotlightSearch
 npm ci
-npm run desktop
+npm run desktop   # run the app in development mode
+npm run bundle    # or build the installer under src-tauri/target/release/bundle/nsis/
 ```
 
-The first launch starts indexing in the background. Results appear as batches are saved. A full drive scan can take time; the footer shows progress. Later launches can search the saved index while it refreshes.
+## Using Lumen
+
+The first launch starts indexing in the background. Results appear as batches are saved. A full drive scan can take a while and the footer shows progress. Later launches can search the saved index while it refreshes.
 
 - **Alt + Space:** show/hide the launcher
 - **Up / Down:** select a result
@@ -33,6 +72,20 @@ The first launch starts indexing in the background. Results appear as batches ar
 
 Alt + Space must be available to register as a global shortcut. If another utility owns it, use the tray menu to open Lumen. Closing the window keeps the process running; use **Quit Lumen** in the tray menu to exit.
 
+## Privacy and data
+
+Lumen runs entirely on your PC. Its own code contains no network requests and no telemetry, and its content security policy allows only local connections. The Microsoft WebView2 runtime that draws the window is a separate Microsoft component that Lumen does not control.
+
+What Lumen stores, all unencrypted, in per-user folders (Tauri's app data directory for the identifier `com.lumen.search`, and the WebView2 profile for the same identifier):
+
+- **The file index** (`index.sqlite3`): the name and full path of every file and folder Lumen could read on your drive letters, including paths you may consider private. Anyone who can read your user profile can read it.
+- **Recent searches**: up to 10 query texts, in the WebView's local storage. **Clear** in the recent list erases them.
+- **An icon cache** (`icons/`), and an empty marker file (`blur-off`) while the blur is switched off.
+
+What Lumen runs: a hidden `powershell.exe` with `Get-StartApps` on each refresh (to list Microsoft Store apps), `explorer.exe` to launch those apps, and your default handler for opening files. File contents are never read.
+
+To remove everything, uninstall Lumen and delete its data folders. The installer's own options may handle some of this; check that they are gone.
+
 ## Performance comes first
 
 Search runs in Rust against a persistent SQLite index. The UI dispatches immediately with one request in flight and only the latest query pending. Search/status updates pause while the launcher is hidden or unfocused; the Rust indexer can continue its background scan. The surface uses a mostly solid fill; there is no CSS backdrop blur. An experimental native Windows Acrylic blur can be switched off from the tray menu (**Blur background**); see [PERFORMANCE.md](PERFORMANCE.md#acrylic-blur-experiment).
@@ -46,14 +99,6 @@ The launcher opens as a compact search field with category controls. Typing expa
 For a browser preview, run `npm run dev`, then open `http://localhost:1420`. Choose **Explore sample files** (or visit `http://localhost:1420/?demo=1`) to try search, filtering, navigation, and copying paths with labeled fixtures. Browser previews do not access your filesystem. The background and preview labels only appear in the browser; the native launcher floats above your Windows desktop.
 
 See [design notes](design/notes.md) and [the updated preview](preview.png). Native window resizing and transparency require Windows validation.
-
-## Build an installer
-
-```powershell
-npm run bundle
-```
-
-Find the NSIS installer under `src-tauri/target/release/bundle/nsis/`. The installer is unsigned. The included GitHub Actions workflow builds and uploads a Windows installer when the project is pushed to a repository.
 
 ## App icons
 
@@ -78,3 +123,11 @@ cargo check --manifest-path src-tauri/Cargo.toml --features desktop
 ```
 
 The core Rust tests run without a GUI toolchain. The desktop check requires the platform's Tauri prerequisites. `npm run dev` also provides a browser preview, clearly labeled as a preview, without access to system files. Native shortcuts, tray interaction, opening results, and installer behavior must be tested on Windows.
+
+## Contributing
+
+Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. For security problems, see [SECURITY.md](SECURITY.md) instead of opening a public issue. Notable changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+[MIT](LICENSE) © 2026 PerspicaciousGuy. The Apple Spotlight interface was a design reference only; Lumen is an independent project and is not affiliated with or endorsed by Apple.

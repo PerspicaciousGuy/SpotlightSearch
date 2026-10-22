@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in Lumen does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Lumen indexes file names and paths, so **please remove or blur anything private** (user names, project names, paths) from logs and screenshots.
+  - type: input
+    id: version
+    attributes:
+      label: Lumen version
+      description: From the installer file name or the release you downloaded.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Press Win+R, type winver, and give the version and build.
+      placeholder: "Windows 11 25H2, build 26200"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Press Alt + Space
+        2. Type ...
+        3. ...
+  - type: textarea
+    id: context
+    attributes:
+      label: Other details
+      description: Approximate number of indexed items (shown in the footer), whether indexing was running, blur on or off, screenshots.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues
+          required: true
+        - label: I removed private information from anything I attached
+          required: true

@@ -2,6 +2,11 @@
 name = "lumen-search"
 version = "0.1.0"
 edition = "2021"
+description = "A fast, local file and app launcher for Windows"
+license = "MIT"
+authors = ["PerspicaciousGuy"]
+repository = "https://github.com/PerspicaciousGuy/SpotlightSearch"
+publish = false
 
 [lib]
 name = "lumen_search"

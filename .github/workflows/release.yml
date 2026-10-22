@@ -1,0 +1,42 @@
+name: Release
+# Push a tag such as v0.1.0 to build the installer and publish it as a GitHub Release.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check the tag matches the app version
+        shell: pwsh
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $env:GITHUB_REF_NAME does not match version $version in src-tauri/tauri.conf.json"
+          }
+      - run: npm ci
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+      - run: npm run bundle
+      - name: Write SHA-256 checksums
+        shell: pwsh
+        run: |
+          $dir = 'src-tauri/target/release/bundle/nsis'
+          Get-ChildItem "$dir/*.exe" | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          } | Set-Content "$dir/SHA256SUMS.txt" -Encoding ascii
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $dir = 'src-tauri/target/release/bundle/nsis'
+          $files = @(Get-ChildItem "$dir/*.exe" | ForEach-Object { $_.FullName }) + "$dir/SHA256SUMS.txt"
+          gh release create $env:GITHUB_REF_NAME @files --title "Lumen $env:GITHUB_REF_NAME" --generate-notes --verify-tag

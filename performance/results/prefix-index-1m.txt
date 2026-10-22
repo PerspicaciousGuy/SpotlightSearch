@@ -1,0 +1,12 @@
+Index open: 10.056 ms; database: /tmp/bench.sqlite3
+des            all  hits=40 p50=   0.028 ms p95=   0.049 ms
+budget         file hits=40 p50=   0.028 ms p95=   0.035 ms
+project        all  hits=40 p50=   0.027 ms p95=   0.049 ms
+1              all  hits=40 p50=   0.027 ms p95=   0.035 ms
+de             all  hits=40 p50=   0.027 ms p95=   0.035 ms
+日本語            all  hits=40 p50=   0.028 ms p95=   0.035 ms
+100%           file hits=40 p50=   0.028 ms p95=   0.050 ms
+2026           all  hits=40 p50=   0.044 ms p95=   0.068 ms
+no-such-file   all  hits= 0 p50=   0.020 ms p95=   0.041 ms
+code           app  hits=40 p50=   0.162 ms p95=   0.207 ms
+All queries: p50=0.028 ms p95=0.162 ms (300 samples)

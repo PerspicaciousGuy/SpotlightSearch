@@ -68,6 +68,10 @@ impl Index {
     fn connect(&self) -> Result<Connection> {
         let c = sql(Connection::open(&self.db))?;
         sql(c.busy_timeout(std::time::Duration::from_secs(5)))?;
+        // WAL defaults to synchronous=FULL, which syncs on every 500-row batch. NORMAL
+        // syncs only at checkpoints and cannot corrupt the database; a crash may lose
+        // the last batches, which the next refresh re-indexes.
+        sql(c.execute_batch("PRAGMA synchronous=NORMAL;"))?;
         Ok(c)
     }
     pub fn status(&self) -> IndexStatus {
@@ -164,20 +168,15 @@ impl Index {
         let tx = sql(conn.transaction())?;
         let mut added = 0;
         {
-            let mut insert = sql(tx.prepare_cached("INSERT OR IGNORE INTO files(name,name_lower,path,kind,generation) VALUES(?1,?2,?3,?4,?5)"))?;
-            let mut touch = sql(tx.prepare_cached("UPDATE files SET generation=?1 WHERE path=?2"))?;
+            // One statement per file: new paths insert, known paths only refresh their
+            // generation. The FTS triggers fire on insert/delete, not on this update.
+            let mut upsert = sql(tx.prepare_cached("INSERT INTO files(name,name_lower,path,kind,generation) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(path) DO UPDATE SET generation=excluded.generation"))?;
             for (name, path, kind) in batch.drain(..) {
-                let inserted = sql(insert.execute(params![
-                    name,
-                    name.to_lowercase(),
-                    path,
-                    kind,
-                    generation
-                ]))?;
-                added += inserted as u64;
-                if inserted == 0 {
-                    sql(touch.execute(params![generation, path]))?;
-                }
+                // AUTOINCREMENT ids only grow, and the update path leaves
+                // last_insert_rowid alone, so a change means a new row.
+                let previous = tx.last_insert_rowid();
+                sql(upsert.execute(params![name, name.to_lowercase(), path, kind, generation]))?;
+                added += (tx.last_insert_rowid() != previous) as u64;
             }
         }
         sql(tx.commit())?;
@@ -203,16 +202,17 @@ impl Index {
                 .replace('%', "\\%")
                 .replace('_', "\\_")
         );
-        // Exact and prefix matches always outrank substring matches. Resolve them
-        // first so FTS does no work when this tier already fills the result list.
+        // Exact and prefix matches always outrank substring matches. Walk the
+        // name_lower index in order instead of sorting every prefix hit by length:
+        // an exact name is the smallest string with its own prefix, so it comes
+        // first, and SQLite stops after 40 rows however many names share the prefix.
         let mut results = {
             let mut statement = sql(conn.prepare_cached(
                 "SELECT f.id,f.name,f.path,f.kind FROM files f
                  WHERE f.name_lower LIKE ?1 ESCAPE '\\' AND (?2='all' OR f.kind=?2)
-                 ORDER BY CASE WHEN f.name_lower=?3 THEN 0 ELSE 1 END,
-                          length(f.name),f.name_lower,f.path LIMIT 40",
+                 ORDER BY f.name_lower COLLATE NOCASE LIMIT 40",
             ))?;
-            let rows = sql(statement.query_map(params![prefix, kind, query], search_result))?;
+            let rows = sql(statement.query_map(params![prefix, kind], search_result))?;
             sql(rows.collect::<rusqlite::Result<Vec<_>>>())?
         };
         if results.len() == 40 || query.chars().count() < 3 {
@@ -258,15 +258,14 @@ fn classify(path: &Path, folder: bool) -> &'static str {
     if folder {
         return "folder";
     }
-    match path
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_lowercase()
-        .as_str()
+    let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("");
+    if ["exe", "lnk", "appref-ms"]
+        .iter()
+        .any(|app| extension.eq_ignore_ascii_case(app))
     {
-        "exe" | "lnk" | "appref-ms" => "app",
-        _ => "file",
+        "app"
+    } else {
+        "file"
     }
 }
 pub fn search_roots() -> Vec<PathBuf> {
@@ -307,12 +306,15 @@ mod tests {
         for _ in 0..3 {
             let matches = index.search("BUDGET", "all").unwrap();
             assert_eq!(matches.len(), 40);
+            // Exact name first, then prefix matches in case-insensitive name order.
             assert_eq!(matches[0].name, "budget");
-            assert_eq!(matches[1].name, "budget.exe");
-            assert_eq!(matches[2].name, "BUDGET.txt");
+            assert_eq!(matches[1].name, "budget extra 00.txt");
             assert!(matches
                 .iter()
                 .all(|item| item.name.to_lowercase().starts_with("budget")));
+            assert!(matches[1..]
+                .windows(2)
+                .all(|pair| pair[0].name.to_lowercase() <= pair[1].name.to_lowercase()));
             assert_eq!(index.search("budget", "app").unwrap().len(), 1);
         }
         let before = index.search("budget", "app").unwrap()[0].id;

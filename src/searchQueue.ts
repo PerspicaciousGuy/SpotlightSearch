@@ -17,6 +17,12 @@ export class LatestSearchQueue<Request, Response> {
     if (!this.running) void this.drain();
   }
 
+  // Background refreshes must not discard a running search or replace a newer
+  // pending one, so they only start when nothing else is queued.
+  submitIfIdle(request: Request) {
+    if (!this.running && !this.pending) this.submit(request);
+  }
+
   clear() {
     ++this.revision;
     this.pending = undefined;

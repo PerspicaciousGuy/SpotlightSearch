@@ -1,0 +1,13 @@
+Fixture: 100000 entries inserted in 3.16s
+Index open: 1.944 ms; database: /tmp/b100k.sqlite3
+des            all  hits=40 p50=   0.035 ms p95=   0.046 ms
+budget         file hits=40 p50=   0.035 ms p95=   0.062 ms
+project        all  hits=40 p50=   0.034 ms p95=   0.048 ms
+1              all  hits=40 p50=   0.034 ms p95=   0.043 ms
+de             all  hits=40 p50=   0.034 ms p95=   0.044 ms
+日本語            all  hits=40 p50=   0.036 ms p95=   0.049 ms
+100%           file hits=40 p50=   0.035 ms p95=   0.083 ms
+2026           all  hits=40 p50=   0.059 ms p95=   0.083 ms
+no-such-file   all  hits= 0 p50=   0.026 ms p95=   0.045 ms
+code           app  hits=40 p50=   0.203 ms p95=   0.292 ms
+All queries: p50=0.035 ms p95=0.203 ms (300 samples)

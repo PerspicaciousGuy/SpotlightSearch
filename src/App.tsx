@@ -44,6 +44,9 @@ export default function App() {
       : [];
   const suggestionSelected = Math.min(suggestionIndex, Math.max(suggestions.length - 1, 0));
   const clearRecent = () => { setRecent([]); saveRecent([]); focus(); };
+  const remember = () => { const next = addRecent(recent, { query, kind }); setRecent(next); saveRecent(next); };
+  // Leaving the launcher while results are showing also counts as a search worth keeping.
+  useEffect(() => { if (!focused && mode === 'results' && results.length) remember(); }, [focused]);
   useEffect(() => { setSuggestionIndex(0); }, [mode, kind, query]);
   const show = () => { setFocused(true); setHidden(false); requestAnimationFrame(focus); };
   const hide = () => {
@@ -98,11 +101,9 @@ export default function App() {
     if (opening || busy) return;
     if (!api.native) { setNotice('This is a sample file. Open the Windows app to search and open your own files.'); return; }
     setOpening(true);
-    try {
-      await api.open(file.id);
-      const next = addRecent(recent, { query, kind });
-      setRecent(next); saveRecent(next);
-    } catch (error) { setError(String(error)); } finally { setOpening(false); }
+    // Saved before opening: a successful open hides the window right away.
+    remember();
+    try { await api.open(file.id); } catch (error) { setError(String(error)); } finally { setOpening(false); }
   };
   return <div className={api.native ? 'app-shell native-shell' : 'app-shell preview-shell'}>
     {!api.native && <div className="preview-toolbar"><span className="preview-brand"><Search size={15} />Lumen<span>for Windows</span></span><a href={api.demo ? '/' : '/?demo=1'}>{api.demo ? 'Exit sample preview' : 'Explore sample files'} <ArrowUpRight size={13} aria-hidden="true" /></a></div>}

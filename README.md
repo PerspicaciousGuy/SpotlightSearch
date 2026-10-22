@@ -56,6 +56,7 @@ Find the NSIS installer under `src-tauri/target/release/bundle/nsis/`. The insta
 ## Search behavior and scope
 
 - Searches **names**, not file contents. Includes files, folders, `.exe` apps, and `.lnk`/`.appref-ms` shortcuts, including indexed Start Menu shortcuts.
+- Store/MSIX apps (for example the TradingView desktop app) cannot be found by walking the disk, because `C:\Program Files\WindowsApps` is not listable by standard users and their Start Menu entries are not `.lnk` files. Each refresh runs `Get-StartApps` in a hidden PowerShell and indexes the packaged apps (those with a `Package!App` ID) as Apps; they open through `explorer.exe shell:AppsFolder\<ID>`. This adds a PowerShell start-up (about a second or more) to every refresh, on the indexer thread.
 - Scans accessible mounted drive letters A–Z under your current Windows account. Network/removable drives with letters may be included and may slow indexing. It does not bypass permissions or fetch online-only file contents.
 - Does not follow symbolic links or directory junctions. Skips `.git`, `node_modules`, `$Recycle.Bin`, and `System Volume Information` directories.
 - Uses a local SQLite FTS5 trigram index for substring matches with **three or more characters**. One- and two-character queries match the beginning of a name. Exact matches rank first, followed by prefixes in case-insensitive name order; remaining substring matches use stable index order. Both tiers read an index in order, so the search stops after filling 40 results.

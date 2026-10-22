@@ -157,6 +157,8 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
 .suggestion-row { min-height: 46px; }
 .suggestion-icon { flex: none; width: 31px; display: grid; place-items: center; color: #77738a; }
 .suggestion-empty { margin: 0; padding: 18px 11px 10px; color: var(--secondary); font-size: 12px; line-height: 1.6; }
+/* In blur mode the selected row is a translucent tint with a light edge, so the blur shows through it. */
+[data-blur='on'] .result-row.is-selected { background: rgba(70, 105, 225, .17); border-color: rgba(255, 255, 255, .6); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none!important; transition: none!important; scroll-behavior: auto!important; } }
 @media (prefers-reduced-transparency: reduce) { .launcher, [data-blur='on'] .native-shell .launcher { background: #f8f8fc; backdrop-filter: none; } }
 @media (forced-colors: active) { .result-row.is-selected { outline: 2px solid Highlight; } .filter-button.is-active { outline: 1px solid Highlight; } }

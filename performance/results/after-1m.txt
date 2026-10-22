@@ -1,0 +1,12 @@
+Index open: 14.748 ms; database: /tmp/lumen-performance-million.sqlite3
+des            all  hits=40 p50=  56.519 ms p95=  65.161 ms
+budget         file hits=40 p50=  61.392 ms p95=  69.366 ms
+project        all  hits=40 p50=  62.836 ms p95=  70.521 ms
+1              all  hits=40 p50=  57.036 ms p95=  59.987 ms
+de             all  hits=40 p50=  57.630 ms p95=  61.037 ms
+日本語            all  hits=40 p50=  59.190 ms p95=  66.806 ms
+100%           file hits=40 p50=  61.049 ms p95=  82.682 ms
+2026           all  hits=40 p50=   0.068 ms p95=   0.824 ms
+no-such-file   all  hits= 0 p50=   0.026 ms p95=   0.062 ms
+code           app  hits=40 p50=   0.220 ms p95=   0.308 ms
+All queries: p50=56.857 ms p95=67.467 ms (300 samples)

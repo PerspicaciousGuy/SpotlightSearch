@@ -1,0 +1,28 @@
+[package]
+name = "lumen-search"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "lumen_search"
+
+[[bin]]
+name = "lumen-search"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+default = []
+desktop = ["dep:tauri", "dep:tauri-plugin-global-shortcut", "dep:open", "dep:tauri-build"]
+
+[build-dependencies]
+tauri-build = { version = "2", optional = true }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+walkdir = "2"
+dirs = "6"
+tauri = { version = "2", features = ["tray-icon"], optional = true }
+tauri-plugin-global-shortcut = { version = "2", optional = true }
+open = { version = "5", optional = true }

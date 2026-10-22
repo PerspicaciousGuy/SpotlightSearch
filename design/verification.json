@@ -1,0 +1,36 @@
+{
+  "browser_errors": [],
+  "accessibility": [
+    {
+      "state": "results",
+      "axe_violations": []
+    },
+    {
+      "state": "empty",
+      "axe_violations": []
+    },
+    {
+      "state": "idle",
+      "axe_violations": []
+    }
+  ],
+  "layout_widths": [
+    320,
+    480,
+    640,
+    768,
+    1440
+  ],
+  "behavior": [
+    "keyboard navigation",
+    "selection survives polling",
+    "copy path",
+    "sample open feedback",
+    "Escape clear then hide",
+    "Alt+Space reopen",
+    "Ctrl+1\u20134 category switching",
+    "empty state recovery",
+    "focusable result region",
+    "browser preview shows no system files"
+  ]
+}

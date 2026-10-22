@@ -1,3 +1,4 @@
+pub mod icons;
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use std::{

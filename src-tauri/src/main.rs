@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use lumen_search::{Index, IndexStatus, SearchResult, APPS_FOLDER};
+use lumen_search::{icons, Index, IndexStatus, SearchResult, APPS_FOLDER};
 use std::sync::Arc;
 use tauri::{
     menu::{CheckMenuItem, Menu, MenuItem},
@@ -58,6 +58,23 @@ fn index_status(index: State<'_, Arc<Index>>) -> IndexStatus {
 fn rebuild_index(index: State<'_, Arc<Index>>) {
     index.inner().rebuild_system();
 }
+// Icons are requested at twice the displayed size so they stay sharp on high-DPI screens.
+const ICON_SIZE: i32 = 64;
+#[tauri::command]
+async fn app_icon(
+    app: tauri::AppHandle,
+    index: State<'_, Arc<Index>>,
+    id: i64,
+) -> Result<Option<String>, String> {
+    let index = index.inner().clone();
+    let cache = app.path().app_data_dir().ok().map(|dir| dir.join("icons"));
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = index.path_for_id(id)?;
+        Ok(icons::cached_icon(&path, cache.as_deref(), ICON_SIZE, icons::shell_icon_png))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 #[tauri::command]
 async fn open_result(
     app: tauri::AppHandle,
@@ -99,7 +116,7 @@ fn main() {
                 }
             }
         }).build())
-        .invoke_handler(tauri::generate_handler![search, index_status, rebuild_index, open_result, blur_enabled])
+        .invoke_handler(tauri::generate_handler![search, index_status, rebuild_index, open_result, blur_enabled, app_icon])
         .setup(|app| {
             let index = Index::new(app.path().app_data_dir()?.join("index.sqlite3"))?;
             app.manage(index.clone());

@@ -1867,12 +1867,14 @@ version = "0.1.0"
 dependencies = [
  "dirs 6.0.0",
  "open",
+ "png",
  "rusqlite",
  "serde",
  "tauri",
  "tauri-build",
  "tauri-plugin-global-shortcut",
  "walkdir",
+ "windows",
 ]
 
 [[package]]

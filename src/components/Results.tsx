@@ -30,7 +30,7 @@ export function Results({ results, selected, query, opening, onSelect, onOpen, o
           {index < 2 && <div className="group-label" aria-hidden="true">{index === 0 ? 'Top hit' : 'Other matches'}</div>}
           <div id={`result-${index}`} role="option" aria-selected={index === selected} className={`result-row${index === selected ? ' is-selected' : ''}`}
             onMouseMove={() => onSelect(index)} onMouseDown={event => event.preventDefault()} onClick={() => onOpen(file)}>
-            <FileIcon file={file} />
+            <FileIcon file={file} loadIcon={index < 12} />
             <div className="result-copy"><span className="result-name"><Highlight text={file.name} query={query} /></span><span className="result-subtitle">{fileType(file)}</span></div>
             <CornerDownLeft size={14} className="result-enter" aria-hidden="true" />
           </div>

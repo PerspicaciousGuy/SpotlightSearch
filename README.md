@@ -27,7 +27,7 @@ The first launch starts indexing in the background. Results appear as batches ar
 - **Ctrl + 1 / 2 / 3 / 4:** switch All / Apps / Files / Folders
 - **Ctrl + L:** select the search field
 - **Slash commands:** type `/a ` for Apps, `/f ` for Files, or `/o ` for Folders. The prefix becomes a chip in the search box; Backspace on an empty box removes it, and Esc clears the text and the chip. Type `/` alone to list the commands (Up/Down, then Enter or Tab), or `/r` to show recent searches.
-- **Recent searches:** with an empty box, Lumen lists your last 10 searches (only ones you opened a result from). Select one with Up/Down and Enter, or click it. **Clear** erases the list. They are stored as plain text in the WebView's local storage on your PC, not in the file index.
+- **Recent searches:** with an empty box, Lumen lists your last 10 searches (saved when you open a result, or when the launcher loses focus while results are showing). Select one with Up/Down and Enter, or click it. **Clear** erases the list. They are stored as plain text in the WebView's local storage on your PC, not in the file index.
 - **Tray menu:** open, refresh the index, toggle the blur background, or quit
 - **Refresh button:** rescan for new, renamed, or removed files
 
@@ -54,6 +54,10 @@ npm run bundle
 ```
 
 Find the NSIS installer under `src-tauri/target/release/bundle/nsis/`. The installer is unsigned. The included GitHub Actions workflow builds and uploads a Windows installer when the project is pushed to a repository.
+
+## App icons
+
+Apps in the results list show their real Windows icon. The shell is asked for it about 120 ms after a row appears (never for every one of the 40 results at once), at most three at a time, and the PNG is cached in the app data folder under `icons`, keyed by path, size and file modification time. Until it arrives, or if Windows has none, the generic icon is shown. Store/MSIX apps are requested through `shell:AppsFolder\<ID>`. Files and folders keep their generic icons, and the details pane keeps its large generic icon. The extraction code is Windows-only (`src-tauri/src/icons.rs`); the browser preview shows clearly fake letter tiles instead.
 
 ## Search behavior and scope
 
